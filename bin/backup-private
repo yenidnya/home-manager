@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    printf 'Usage: backup-private OUTPUT.tar.gz.age\n' >&2
+    exit 1
+fi
+
+if ! command -v age >/dev/null 2>&1; then
+    printf 'age is required. Install it outside this repository before backup.\n' >&2
+    exit 1
+fi
+
+items=()
+for item in \
+    .ssh/id_ecdsa \
+    .ssh/id_ecdsa.pub \
+    .ssh/id_ecdsa-cert.pub \
+    .npmrc; do
+    if [[ -e "$HOME/$item" ]]; then
+        items+=("$item")
+    fi
+done
+
+if [[ ${#items[@]} -eq 0 ]]; then
+    printf 'No configured private files were found.\n' >&2
+    exit 1
+fi
+
+umask 077
+tar -C "$HOME" -czf - "${items[@]}" | age --passphrase --output "$1"
+chmod 600 "$1"
+printf 'Encrypted backup written to %s\n' "$1"

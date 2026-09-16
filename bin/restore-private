@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    printf 'Usage: restore-private INPUT.tar.gz.age\n' >&2
+    exit 1
+fi
+
+if ! command -v age >/dev/null 2>&1; then
+    printf 'age is required. Install it before restore.\n' >&2
+    exit 1
+fi
+
+umask 077
+age --decrypt "$1" | tar -xzkf - -C "$HOME"
+
+[[ ! -d "$HOME/.ssh" ]] || chmod 700 "$HOME/.ssh"
+[[ ! -f "$HOME/.ssh/id_ecdsa" ]] || chmod 600 "$HOME/.ssh/id_ecdsa"
+[[ ! -f "$HOME/.npmrc" ]] || chmod 600 "$HOME/.npmrc"
+
+printf 'Private files restored. Existing files were not overwritten.\n'

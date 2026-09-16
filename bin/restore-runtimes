@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+mise install
+rustup toolchain install 1.97.1 stable nightly
+rustup default 1.97.1

@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+repository="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+expected_repository="$HOME/.config/home-manager"
+private_repository="$HOME/.config/home-manager-yenidnya"
+private_remote=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --private)
+            if [[ $# -lt 2 ]]; then
+                printf 'Usage: bootstrap [--private REMOTE]\n' >&2
+                exit 1
+            fi
+            private_remote="$2"
+            shift 2
+            ;;
+        --help)
+            printf 'Usage: bootstrap [--private REMOTE]\n'
+            exit 0
+            ;;
+        *)
+            printf 'Unknown option: %s\n' "$1" >&2
+            exit 1
+            ;;
+    esac
+done
+
+if [[ "$repository" != "$expected_repository" ]]; then
+    printf 'Move or clone this repository to %s before activation.\n' "$expected_repository" >&2
+    exit 1
+fi
+
+if [[ -r /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+    # shellcheck disable=SC1091
+    source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+fi
+
+if ! command -v nix >/dev/null 2>&1; then
+    printf 'Nix is not installed. Install upstream Nix before activation.\n' >&2
+    exit 1
+fi
+
+home_manager_arguments=(
+    switch
+    -b hm-backup
+    --flake "$repository#yenidnya@macos"
+)
+
+if [[ -n "$private_remote" ]]; then
+    if [[ -d "$private_repository/.git" ]]; then
+        configured_remote="$(git -C "$private_repository" remote get-url origin)"
+        if [[ "$configured_remote" != "$private_remote" ]]; then
+            printf 'Private repository origin does not match %s.\n' "$private_remote" >&2
+            exit 1
+        fi
+        if [[ -n "$(git -C "$private_repository" status --porcelain)" ]]; then
+            printf 'Private repository has local changes. Commit or discard them before update.\n' >&2
+            exit 1
+        fi
+        git -C "$private_repository" pull --ff-only
+    elif [[ -e "$private_repository" ]]; then
+        printf '%s exists but is not a Git repository.\n' "$private_repository" >&2
+        exit 1
+    else
+        git clone "$private_remote" "$private_repository"
+    fi
+
+    home_manager_arguments+=(
+        --override-input private-config "path:$private_repository"
+        --no-write-lock-file
+    )
+fi
+
+nix --extra-experimental-features "nix-command flakes" \
+    run github:nix-community/home-manager/release-26.05 -- \
+    "${home_manager_arguments[@]}"
