@@ -32,6 +32,12 @@
       };
     in
     {
+      devShells.${system} =
+        if builtins.pathExists "${private-config}/dev-shells.nix" then
+          import "${private-config}/dev-shells.nix" { inherit pkgs; }
+        else
+          { };
+
       homeConfigurations."${username}@macos" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs = { inherit inputs username; };

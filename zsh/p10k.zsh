@@ -60,6 +60,7 @@
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
     command_execution_time    # previous command duration
     virtualenv                # python virtual environment
+    nix_shell                 # Nix development environment
     context                   # user@host
     time                      # current time
   )
@@ -93,6 +94,10 @@
   # Don't show Python version.
   typeset -g POWERLEVEL9K_VIRTUALENV_SHOW_PYTHON_VERSION=false
   typeset -g POWERLEVEL9K_VIRTUALENV_{LEFT,RIGHT}_DELIMITER=
+
+  # Grey Nix development environment.
+  typeset -g POWERLEVEL9K_NIX_SHELL_FOREGROUND=$grey
+  typeset -g POWERLEVEL9K_NIX_SHELL_CONTENT_EXPANSION='${DEV_SHELL_NAME:-$IN_NIX_SHELL}'
 
   # Blue current directory.
   typeset -g POWERLEVEL9K_DIR_FOREGROUND=$blue
