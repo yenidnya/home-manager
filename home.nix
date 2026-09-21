@@ -18,29 +18,34 @@ in
     stateVersion = "24.11";
 
     packages = with pkgs; [
-alacritty
+      alacritty
       age
       bat
       btop
       cargo-binstall
       cargo-nextest
       cargo-sweep
+      ccache
       cmake
       curl
       docker
+      gettext
       graphviz
       grcov
-	gnupg
+      gnupg
       jq
       just
       lazygit
+      libjpeg
       logcat-colorize
       luajitPackages.luacheck
       mdbook
       mitmproxy
       nerd-fonts.jetbrains-mono
       ninja
+      openssl
       pkg-config
+      python3
       ripgrep
       rustup
       taplo
@@ -69,21 +74,24 @@ alacritty
 
     # Spotlight refuses to index /nix, so store symlinks stay invisible to
     # Alfred. Real APFS aliases are indexable.
-    activation.aliasNixApplications = lib.hm.dag.entryAfter [
-      "writeBoundary"
-      "linkGeneration"
-    ] ''
-      aliasDir="$HOME/Applications/Nix Apps"
-      run rm -rf "$aliasDir"
-      run mkdir -p "$aliasDir"
-      for app in "$HOME/Applications/Home Manager Apps"/*.app; do
-        [ -e "$app" ] || continue
-        run ${pkgs.mkalias}/bin/mkalias \
-          "$(${pkgs.coreutils}/bin/readlink -f "$app")" \
-          "$aliasDir/$(${pkgs.coreutils}/bin/basename "$app")"
-      done
-      run /usr/bin/mdimport "$aliasDir"
-    '';
+    activation.aliasNixApplications =
+      lib.hm.dag.entryAfter
+        [
+          "writeBoundary"
+          "linkGeneration"
+        ]
+        ''
+          aliasDir="$HOME/Applications/Nix Apps"
+          run rm -rf "$aliasDir"
+          run mkdir -p "$aliasDir"
+          for app in "$HOME/Applications/Home Manager Apps"/*.app; do
+            [ -e "$app" ] || continue
+            run ${pkgs.mkalias}/bin/mkalias \
+              "$(${pkgs.coreutils}/bin/readlink -f "$app")" \
+              "$aliasDir/$(${pkgs.coreutils}/bin/basename "$app")"
+          done
+          run /usr/bin/mdimport "$aliasDir"
+        '';
 
   };
 
@@ -93,8 +101,7 @@ alacritty
     configFile = {
       ".taplo.toml".source = ./.taplo.toml;
       "alacritty/alacritty.toml".source = ./alacritty/alacritty.toml;
-      "btop/btop.conf".source =
-        config.lib.file.mkOutOfStoreSymlink "${configRepository}/btop/btop.conf";
+      "btop/btop.conf".source = config.lib.file.mkOutOfStoreSymlink "${configRepository}/btop/btop.conf";
       "git/ignore".source = ./git/ignore;
       "nvim".source = config.lib.file.mkOutOfStoreSymlink "${configRepository}/nvim";
       "opencode".source = config.lib.file.mkOutOfStoreSymlink "${configRepository}/opencode";
@@ -134,9 +141,9 @@ alacritty
     neovim = {
       enable = true;
       defaultEditor = true;
-	withRuby = false;
-	withPython3 = false;
-	sideloadInitLua = true;
+      withRuby = false;
+      withPython3 = false;
+      sideloadInitLua = true;
     };
 
     tmux = {
