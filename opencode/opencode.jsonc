@@ -6,10 +6,6 @@
         "go": {
             "agent": "build",
             "template": "lets build"
-        },
-        "all-in": {
-            "agent": "build",
-            "template": "enable ALL_IN"
         }
     },
     "permission": {

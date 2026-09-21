@@ -6,19 +6,24 @@ repository="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 expected_repository="$HOME/.config/home-manager"
 private_repository="$HOME/.config/home-manager-yenidnya"
 private_remote=""
+use_private="auto"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --private)
             if [[ $# -lt 2 ]]; then
-                printf 'Usage: bootstrap [--private REMOTE]\n' >&2
+                printf 'Usage: bootstrap [--private REMOTE] [--no-private]\n' >&2
                 exit 1
             fi
             private_remote="$2"
             shift 2
             ;;
+        --no-private)
+            use_private="no"
+            shift
+            ;;
         --help)
-            printf 'Usage: bootstrap [--private REMOTE]\n'
+            printf 'Usage: bootstrap [--private REMOTE] [--no-private]\n'
             exit 0
             ;;
         *)
@@ -49,25 +54,28 @@ home_manager_arguments=(
     --flake "$repository#yenidnya@macos"
 )
 
-if [[ -n "$private_remote" ]]; then
-    if [[ -d "$private_repository/.git" ]]; then
-        configured_remote="$(git -C "$private_repository" remote get-url origin)"
-        if [[ "$configured_remote" != "$private_remote" ]]; then
-            printf 'Private repository origin does not match %s.\n' "$private_remote" >&2
-            exit 1
-        fi
-        if [[ -n "$(git -C "$private_repository" status --porcelain)" ]]; then
-            printf 'Private repository has local changes. Commit or discard them before update.\n' >&2
-            exit 1
-        fi
-        git -C "$private_repository" pull --ff-only
-    elif [[ -e "$private_repository" ]]; then
-        printf '%s exists but is not a Git repository.\n' "$private_repository" >&2
-        exit 1
-    else
-        git clone "$private_remote" "$private_repository"
-    fi
+if [[ -n "$private_remote" && ! -e "$private_repository" ]]; then
+    git clone "$private_remote" "$private_repository"
+fi
 
+if [[ -n "$private_remote" && -d "$private_repository/.git" ]]; then
+    configured_remote="$(git -C "$private_repository" remote get-url origin)"
+    if [[ "$configured_remote" != "$private_remote" ]]; then
+        printf 'Private repository origin is %s, not %s.\n' "$configured_remote" "$private_remote" >&2
+        exit 1
+    fi
+fi
+
+# An absent overlay must never degrade silently: report the resolved layer.
+if [[ "$use_private" == "no" ]]; then
+    printf 'Private overlay: disabled by --no-private\n'
+elif [[ ! -e "$private_repository" ]]; then
+    printf 'Private overlay: absent, clone it with --private REMOTE\n'
+elif [[ ! -d "$private_repository/.git" ]]; then
+    printf '%s exists but is not a Git repository.\n' "$private_repository" >&2
+    exit 1
+else
+    printf 'Private overlay: %s\n' "$private_repository"
     home_manager_arguments+=(
         --override-input private-config "path:$private_repository"
         --no-write-lock-file

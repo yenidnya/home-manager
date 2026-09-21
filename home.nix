@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  lib,
   pkgs,
   username,
   ...
@@ -17,6 +18,7 @@ in
     stateVersion = "24.11";
 
     packages = with pkgs; [
+alacritty
       age
       bat
       btop
@@ -26,9 +28,9 @@ in
       cmake
       curl
       docker
-      gnu-tar
       graphviz
       grcov
+	gnupg
       jq
       just
       lazygit
@@ -40,12 +42,10 @@ in
       ninja
       pkg-config
       ripgrep
-      rust-analyzer
       rustup
       taplo
       tree
       tree-sitter
-      unison
       uv
       unstable.opencode
     ];
@@ -66,6 +66,24 @@ in
       LUA_PATH = ";;${config.xdg.configHome}/nvim/lua/yenidnya/?.lua";
       VISUAL = "nvim";
     };
+
+    # Spotlight refuses to index /nix, so store symlinks stay invisible to
+    # Alfred. Real APFS aliases are indexable.
+    activation.aliasNixApplications = lib.hm.dag.entryAfter [
+      "writeBoundary"
+      "linkGeneration"
+    ] ''
+      aliasDir="$HOME/Applications/Nix Apps"
+      run rm -rf "$aliasDir"
+      run mkdir -p "$aliasDir"
+      for app in "$HOME/Applications/Home Manager Apps"/*.app; do
+        [ -e "$app" ] || continue
+        run ${pkgs.mkalias}/bin/mkalias \
+          "$(${pkgs.coreutils}/bin/readlink -f "$app")" \
+          "$aliasDir/$(${pkgs.coreutils}/bin/basename "$app")"
+      done
+      run /usr/bin/mdimport "$aliasDir"
+    '';
 
   };
 
@@ -116,6 +134,9 @@ in
     neovim = {
       enable = true;
       defaultEditor = true;
+	withRuby = false;
+	withPython3 = false;
+	sideloadInitLua = true;
     };
 
     tmux = {

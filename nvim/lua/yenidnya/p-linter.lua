@@ -12,7 +12,7 @@ return {
 			rust = { "clippy" },
 		}
 
-		lint.linters.eslint_d.args = {
+		local args = {
 			"--format",
 			"json",
 			"--stdin",
@@ -20,9 +20,14 @@ return {
 			function()
 				return vim.api.nvim_buf_get_name(0)
 			end,
-			"--rulesdir",
-			"/Volumes/workspace/prime-video/src/AVLivingRoomClient/build-tools/eslint/rules",
 		}
+
+		local rules_dir = require("optional")("local.eslint")
+		if rules_dir then
+			vim.list_extend(args, { "--rulesdir", rules_dir })
+		end
+
+		lint.linters.eslint_d.args = args
 
 		vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 			callback = function()

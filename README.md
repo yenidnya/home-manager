@@ -15,16 +15,25 @@ git clone PUBLIC_REMOTE ~/.config/home-manager
 
 ## Install
 
-Apply only the personal environment:
+Clone the optional private overlay once, then apply:
+
+```sh
+~/.config/home-manager/bootstrap --private PRIVATE_REMOTE
+```
+
+Every later run detects the overlay at `~/.config/home-manager-yenidnya` and applies it:
 
 ```sh
 ~/.config/home-manager/bootstrap
 ```
 
-Add the optional private overlay:
+Bootstrap prints the layer it resolved. Pass `--no-private` to apply the personal
+environment alone; omitting the overlay removes every file and package it owns.
+
+Install the tools Nix does not package:
 
 ```sh
-~/.config/home-manager/bootstrap --private PRIVATE_REMOTE
+restore-runtimes
 ```
 
 ## Update
@@ -34,7 +43,8 @@ nix flake update
 ~/.config/home-manager/bootstrap
 ```
 
-Use the private install command instead when the overlay is active.
+The overlay is never written to `flake.lock`, so the private path stays out of this
+repository.
 
 ## Private Backup
 
@@ -54,3 +64,6 @@ It links Neovim, btop, OpenCode, Alacritty, and steering files from this reposit
 
 Configuration sources remain writable inside this repository.
 Private modules can add packages, settings, and files without changing the public repository.
+
+Work-specific values belong in the overlay. Neovim reaches them through
+`require("optional")("local.NAME")`, which returns `nil` when the overlay is absent.

@@ -5,3 +5,7 @@ set -euo pipefail
 mise install
 rustup toolchain install 1.97.1 stable nightly
 rustup default 1.97.1
+
+# --skip-config keeps agent wiring declarative: opencode.jsonc owns the MCP entry.
+curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh |
+    bash -s -- --skip-config

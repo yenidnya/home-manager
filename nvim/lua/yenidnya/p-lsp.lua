@@ -31,14 +31,13 @@ return {
 				},
 			})
 
-			vim.lsp.config("eslint", {
-				cmd = {
-					"vscode-eslint-language-server",
-					"--stdio",
-					"--rulesdir",
-					"/Volumes/workspace/prime-video/src/AVLivingRoomClient/build-tools/eslint/rules",
-				},
-			})
+			local eslint_cmd = { "vscode-eslint-language-server", "--stdio" }
+			local eslint_rules_dir = require("optional")("local.eslint")
+			if eslint_rules_dir then
+				vim.list_extend(eslint_cmd, { "--rulesdir", eslint_rules_dir })
+			end
+
+			vim.lsp.config("eslint", { cmd = eslint_cmd })
 
 			vim.lsp.config("typos_lsp", {
 				init_options = {

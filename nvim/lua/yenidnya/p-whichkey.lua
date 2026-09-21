@@ -6,14 +6,6 @@ map.set({ "v", "n" }, "L", "$")
 map.set("v", "J", ":m '>+1<CR>gv=gv")
 map.set("v", "K", ":m '<-2<CR>gv=gv")
 
-local function optional_require(...)
-	local status, lib = pcall(require, ...)
-	if status then
-		return lib
-	end
-	return nil
-end
-
 return {
 	"folke/which-key.nvim",
 	event = "VeryLazy",
@@ -29,7 +21,7 @@ return {
 
 		local tscope_builtin = require("telescope.builtin")
 		local tscope = require("telescope")
-		local local_code_mappings = optional_require("local.whichkey") or {}
+		local local_code_mappings = require("optional")("local.whichkey") or {}
 
 		-- Code Actions
 		wk.register({
