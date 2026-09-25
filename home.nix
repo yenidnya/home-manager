@@ -22,12 +22,12 @@ in
       age
       bat
       btop
+      bun
       cargo-binstall
       cargo-nextest
       cargo-sweep
       ccache
       cmake
-      curl
       docker
       gettext
       graphviz
@@ -230,7 +230,17 @@ in
       defaultKeymap = "viins";
       dotDir = "${config.xdg.configHome}/zsh";
       enableCompletion = true;
-      historySubstringSearch.enable = true;
+      historySubstringSearch = {
+        enable = true;
+        searchUpKey = [
+          "^[[A"
+          "$terminfo[kcuu1]"
+        ];
+        searchDownKey = [
+          "^[[B"
+          "$terminfo[kcud1]"
+        ];
+      };
       syntaxHighlighting.enable = true;
 
       plugins = [
