@@ -53,6 +53,7 @@ in
       tree-sitter
       uv
       unstable.opencode
+      zig
     ];
 
     sessionPath = [
