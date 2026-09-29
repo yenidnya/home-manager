@@ -32,9 +32,7 @@
         },
         "external_directory": "allow",
         "doom_loop": "allow",
-        "skill": {
-            "cyclomatic-complexity": "allow"
-        }
+        "skill": "allow"
     },
     "mcp": {
         "codebase-memory-mcp": {

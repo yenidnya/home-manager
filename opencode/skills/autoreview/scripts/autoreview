@@ -1,0 +1,390 @@
+#!/usr/bin/env bun
+
+// AutoReview Git collector.
+
+import { lstatSync } from "node:fs"
+import { resolve, sep } from "node:path"
+import { spawnSync } from "node:child_process"
+
+const MAX_BUFFER = 128 * 1024 * 1024
+const MODES = new Set(["auto", "local", "branch", "commit"])
+const SAFE_GIT_ARGS = [
+  "--no-optional-locks",
+  "-c", "core.fsmonitor=false",
+  "-c", "core.pager=cat",
+  "-c", "diff.external=",
+  "-c", "diff.renames=false",
+  "-c", "pager.diff=cat",
+  "-c", "pager.show=cat",
+]
+const DIFF_FLAGS = ["--no-ext-diff", "--no-textconv", "--no-renames", "--no-color"]
+const PATCH_FLAGS = [
+  ...DIFF_FLAGS,
+  "--src-prefix=a/",
+  "--dst-prefix=b/",
+  "--unified=5",
+]
+
+function fail(message) {
+  console.error(`autoreview: ${message}`)
+  process.exit(2)
+}
+
+function usage(exitCode = 0) {
+  const stream = exitCode === 0 ? process.stdout : process.stderr
+  stream.write(`Usage:
+  autoreview manifest [--mode auto|local|branch|commit] [--base REF] [--commit REF]
+  autoreview patch --mode local|branch|commit [--base REF] [--head REF] [--commit REF] --path PATH
+
+Commands:
+  manifest  Print a JSON scope manifest. This is the default command.
+  patch     Print one or more selected per-file patches.
+
+Auto mode selects local changes. A clean checkout needs an explicit target.
+`)
+  process.exit(exitCode)
+}
+
+function optionValue(args, index, name) {
+  const value = args[index + 1]
+  if (value === undefined) {
+    fail(`${name} requires a value`)
+  }
+  return value
+}
+
+function parseOptions() {
+  const args = process.argv.slice(2)
+  let command = "manifest"
+  if (args[0] && !args[0].startsWith("--")) {
+    command = args.shift()
+  }
+  if (command === "help") usage()
+  if (!new Set(["manifest", "patch"]).has(command)) {
+    fail(`unknown command: ${command}`)
+  }
+
+  const options = {
+    command,
+    mode: "auto",
+    base: undefined,
+    commit: undefined,
+    head: undefined,
+    paths: [],
+  }
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index]
+    if (argument === "--help" || argument === "-h") usage()
+    if (argument === "--mode") {
+      options.mode = optionValue(args, index, argument)
+      index += 1
+      continue
+    }
+    if (argument === "--base") {
+      options.base = optionValue(args, index, argument)
+      index += 1
+      continue
+    }
+    if (argument === "--commit") {
+      options.commit = optionValue(args, index, argument)
+      index += 1
+      continue
+    }
+    if (argument === "--head") {
+      options.head = optionValue(args, index, argument)
+      index += 1
+      continue
+    }
+    if (argument === "--path") {
+      options.paths.push(optionValue(args, index, argument))
+      index += 1
+      continue
+    }
+    fail(`unknown argument: ${argument}`)
+  }
+
+  if (!MODES.has(options.mode)) fail(`unknown mode: ${options.mode}`)
+  return options
+}
+
+function gitEnvironment() {
+  const environment = {
+    ...process.env,
+    GIT_NO_LAZY_FETCH: "1",
+    GIT_NO_REPLACE_OBJECTS: "1",
+    GIT_OPTIONAL_LOCKS: "0",
+    GIT_PAGER: "cat",
+    GIT_TERMINAL_PROMPT: "0",
+    PAGER: "cat",
+  }
+  for (const key of [
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_COMMON_DIR",
+    "GIT_CONFIG_COUNT",
+    "GIT_DIFF_OPTS",
+    "GIT_DIR",
+    "GIT_EXTERNAL_DIFF",
+    "GIT_GRAFT_FILE",
+    "GIT_INDEX_FILE",
+    "GIT_NAMESPACE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_WORK_TREE",
+  ]) {
+    delete environment[key]
+  }
+  return environment
+}
+
+function git(args, cwd, allowedStatuses = [0]) {
+  const result = spawnSync("git", [...SAFE_GIT_ARGS, ...args], {
+    cwd,
+    env: gitEnvironment(),
+    encoding: null,
+    maxBuffer: MAX_BUFFER,
+  })
+  if (result.error) fail(`cannot run Git: ${result.error.message}`)
+  if (!allowedStatuses.includes(result.status)) {
+    const details = result.stderr?.toString("utf8").trim()
+    fail(details || `Git exited with status ${result.status}`)
+  }
+  return result.stdout ?? Buffer.alloc(0)
+}
+
+function gitText(args, cwd, allowedStatuses = [0]) {
+  return git(args, cwd, allowedStatuses).toString("utf8").replace(/\n$/, "")
+}
+
+function gitNames(args, cwd) {
+  return git(args, cwd).toString("utf8").split("\0").filter(Boolean)
+}
+
+function repositoryRoot() {
+  return gitText(["rev-parse", "--show-toplevel"], process.cwd())
+}
+
+function resolveCommit(root, reference) {
+  if (!reference) fail("a Git reference is required")
+  return gitText(
+    ["rev-parse", "--verify", "--end-of-options", `${reference}^{commit}`],
+    root,
+  )
+}
+
+function branchName(root) {
+  return gitText(["symbolic-ref", "--quiet", "--short", "HEAD"], root, [0, 1]) || null
+}
+
+function assertRepositoryPath(root, path) {
+  const absolutePath = resolve(root, path)
+  const prefix = root.endsWith(sep) ? root : `${root}${sep}`
+  if (!path || !absolutePath.startsWith(prefix)) {
+    fail(`path is outside the repository: ${path}`)
+  }
+}
+
+function sensitivePath(path) {
+  const normalized = path.replaceAll("\\", "/").toLowerCase()
+  const parts = normalized.split("/")
+  const name = parts.at(-1) ?? ""
+  if (parts.some((part) => [".aws", ".gnupg", ".ssh"].includes(part))) return true
+  if (parts.some((part, index) => part === ".config" && parts[index + 1] === "gcloud")) return true
+  if (new Set([".git-credentials", ".netrc"]).has(name)) return true
+  if (/^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/.test(name)) return true
+  if (/\.(key|p12|pem|pfx)$/.test(name)) return true
+  if (name === ".env") return true
+  if (name.startsWith(".env.") && !/(^|[._-])(example|sample|template)$/.test(name)) return true
+  return (
+    /(secret|token|credential|service[-_]?account|private[-_]?key|api[-_]?key)/.test(name)
+    && /\.(conf|config|csv|ini|json|toml|txt|ya?ml)$/.test(name)
+  )
+}
+
+function untrackedSymlink(root, path, layers) {
+  if (!layers.includes("untracked")) return false
+  try {
+    return lstatSync(resolve(root, path)).isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
+function changedPaths(root, entries) {
+  const changes = new Map()
+  for (const [layer, paths] of entries) {
+    for (const path of paths) {
+      assertRepositoryPath(root, path)
+      const layers = changes.get(path) ?? []
+      layers.push(layer)
+      changes.set(path, layers)
+    }
+  }
+  return [...changes.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([path, layers]) => ({
+      path,
+      layers,
+      sensitive: sensitivePath(path),
+      untracked_symlink: untrackedSymlink(root, path, layers),
+    }))
+}
+
+function localSelection(root, baseReference) {
+  const head = resolveCommit(root, "HEAD")
+  const base = resolveCommit(root, baseReference ?? "HEAD")
+  const baseToIndex = gitNames(
+    ["diff", ...DIFF_FLAGS, "--cached", "--name-only", "-z", base, "--"],
+    root,
+  )
+  const indexToWorktree = gitNames(
+    ["diff", ...DIFF_FLAGS, "--name-only", "-z", "--"],
+    root,
+  )
+  const untracked = gitNames(["ls-files", "--others", "--exclude-standard", "-z", "--"], root)
+  return {
+    schema_version: 1,
+    mode: "local",
+    repository_root: root,
+    branch: branchName(root),
+    head,
+    base,
+    merge_base: null,
+    commit: null,
+    patch_arguments: ["--mode", "local", "--base", base],
+    changes: changedPaths(root, [
+      ["base_to_index", baseToIndex],
+      ["index_to_worktree", indexToWorktree],
+      ["untracked", untracked],
+    ]),
+  }
+}
+
+function branchSelection(root, baseReference, headReference) {
+  if (!baseReference) fail("branch mode requires --base")
+  const base = resolveCommit(root, baseReference)
+  const head = resolveCommit(root, headReference ?? "HEAD")
+  const mergeBase = gitText(["merge-base", base, head], root)
+  const paths = gitNames(
+    ["diff", ...DIFF_FLAGS, "--name-only", "-z", mergeBase, head, "--"],
+    root,
+  )
+  return {
+    schema_version: 1,
+    mode: "branch",
+    repository_root: root,
+    branch: branchName(root),
+    head,
+    base,
+    merge_base: mergeBase,
+    commit: null,
+    patch_arguments: ["--mode", "branch", "--base", mergeBase, "--head", head],
+    changes: changedPaths(root, [["merge_base_to_head", paths]]),
+  }
+}
+
+function commitSelection(root, commitReference) {
+  const commit = resolveCommit(root, commitReference ?? "HEAD")
+  const commitLine = gitText(["rev-list", "--parents", "-n", "1", commit], root)
+  if (commitLine.split(/\s+/).length > 2) fail("commit mode does not support merge commits")
+  const paths = gitNames(
+    ["diff-tree", ...DIFF_FLAGS, "--root", "--no-commit-id", "-r", "--name-only", "-z", commit, "--"],
+    root,
+  )
+  return {
+    schema_version: 1,
+    mode: "commit",
+    repository_root: root,
+    branch: branchName(root),
+    head: resolveCommit(root, "HEAD"),
+    base: null,
+    merge_base: null,
+    commit,
+    patch_arguments: ["--mode", "commit", "--commit", commit],
+    changes: changedPaths(root, [["parent_to_commit", paths]]),
+  }
+}
+
+function selection(root, options) {
+  if (options.mode === "local") return localSelection(root, options.base)
+  if (options.mode === "branch") return branchSelection(root, options.base, options.head)
+  if (options.mode === "commit") return commitSelection(root, options.commit)
+
+  const local = localSelection(root, options.base)
+  if (local.changes.length > 0 || options.base) return local
+  fail("auto mode found no local changes; select branch or commit mode explicitly")
+}
+
+function writePatch(metadata, content) {
+  process.stdout.write(`=== AUTOREVIEW_PATCH ${JSON.stringify(metadata)} ===\n`)
+  process.stdout.write(content)
+  if (content.length === 0 || content.at(-1) !== 10) process.stdout.write("\n")
+}
+
+function writeOmission(change, reason) {
+  process.stdout.write(`=== AUTOREVIEW_OMITTED ${JSON.stringify({
+    schema_version: 1,
+    path: change.path,
+    reason,
+  })} ===\n`)
+}
+
+function localPatches(root, target, change) {
+  if (change.layers.includes("base_to_index")) {
+    writePatch(
+      { schema_version: 1, mode: "local", layer: "base_to_index", path: change.path },
+      git(["diff", ...PATCH_FLAGS, "--cached", target.base, "--", change.path], root),
+    )
+  }
+  if (change.layers.includes("index_to_worktree")) {
+    writePatch(
+      { schema_version: 1, mode: "local", layer: "index_to_worktree", path: change.path },
+      git(["diff", ...PATCH_FLAGS, "--", change.path], root),
+    )
+  }
+  if (change.layers.includes("untracked")) {
+    writePatch(
+      { schema_version: 1, mode: "local", layer: "untracked", path: change.path },
+      git(["diff", "--no-index", ...PATCH_FLAGS, "--", "/dev/null", change.path], root, [0, 1]),
+    )
+  }
+}
+
+function writeSelectedPatch(root, target, change) {
+  if (change.sensitive) return writeOmission(change, "sensitive_path")
+  if (change.untracked_symlink) return writeOmission(change, "untracked_symlink")
+  if (target.mode === "local") return localPatches(root, target, change)
+  if (target.mode === "branch") {
+    return writePatch(
+      { schema_version: 1, mode: "branch", layer: "merge_base_to_head", path: change.path },
+      git(["diff", ...PATCH_FLAGS, target.merge_base, target.head, "--", change.path], root),
+    )
+  }
+  return writePatch(
+    { schema_version: 1, mode: "commit", layer: "parent_to_commit", path: change.path },
+    git([
+      "diff-tree", ...PATCH_FLAGS, "--root", "--no-commit-id", "-r", "-p",
+      target.commit, "--", change.path,
+    ], root),
+  )
+}
+
+function main() {
+  const options = parseOptions()
+  const root = repositoryRoot()
+  if (options.command === "manifest") {
+    process.stdout.write(`${JSON.stringify(selection(root, options), null, 2)}\n`)
+    return
+  }
+  if (options.mode === "auto") fail("patch requires the resolved mode from the manifest")
+  if (options.paths.length === 0) fail("patch requires at least one --path")
+
+  const target = selection(root, options)
+  const changes = new Map(target.changes.map((change) => [change.path, change]))
+  for (const path of new Set(options.paths)) {
+    const change = changes.get(path)
+    if (!change) fail(`path is not part of the selected change: ${path}`)
+    writeSelectedPatch(root, target, change)
+  }
+}
+
+main()

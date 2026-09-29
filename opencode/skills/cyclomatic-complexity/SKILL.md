@@ -1,6 +1,7 @@
-______________________________________________________________________
-
-## name: cyclomatic-complexity description: Refactor code to reduce cyclomatic complexity so it stays readable, maintainable, and aligned with the long-term vision of the codebase, not just optimized for AI comprehension. Use whenever the user asks to refactor, simplify, clean up, or review code quality; mentions complexity, maintainability, readability, spaghetti code, deeply nested logic, or god functions; or asks to check AI-generated code before merging. Also use proactively after writing any nontrivial function with heavy branching.
+---
+name: cyclomatic-complexity
+description: "Refactor code to reduce cyclomatic complexity and preserve maintainability. Use for refactoring, simplification, code-quality review, deeply nested logic, or nontrivial new branching."
+---
 
 # Cyclomatic Complexity
 
