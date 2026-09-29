@@ -252,6 +252,11 @@ in
         }
       ];
 
+      oh-my-zsh = {
+        enable = true;
+        plugins = [ "git" ];
+      };
+
       shellAliases = {
         lg = "lazygit";
         oldvim = "/usr/bin/vim";
