@@ -41,7 +41,7 @@ ALWAYS prefer MCP graph tools over grep/glob/file-search for code discovery.
 - Tautological tests are considered harmful. NEVER write change-detector tests. Change-detector tests is a transformation of the same information in the code under test and it breaks in response to any change to the production code, without verifying correct behavior of either the original or modified production code.
 - Code should passes the cyclomatic complexity rules. You can use the skill cyclomatic-complexity to measure it. You MUST write non complex code.
 - Be mindful of the compiled size of the code. Using generics create extra code during monomorphisation which increases the bundle output. Prefer using `dyn Trait` over generics when writing Rust. If both can be used clarify with user on which one to pick.
-- ALWAYS choose composition over inheritence. Design systems around composition. When wiriting Rust use traits for composition.
+- ALWAYS choose composition over inheritance. Design systems around composition. When wiriting Rust use traits for composition.
 - When writing Rust that uses interior mutability; if a type is copy use `Cell`, use `RefCell` if its Clone.
 - When you need to use git, NEVER mutate the history. This means no stash/pop/branch/push/pull. You can search through git history, use diff and show and similar tools that doesn't mutate the history. If you are asked to mutate, make sure user gives you explicit confirmation to do so.
 - Do not preserve backward compatibility unless specified. Remove obsolete paths instead of adding compatibility layers, fallbacks, or migrations.
