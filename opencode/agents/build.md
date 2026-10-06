@@ -21,9 +21,7 @@ Compose overlapping skills deliberately:
   technical or decision documents.
 
 For a completed code candidate, use `deslop` for behavior-preserving diff
-cleanup. Then delegate one independent pass to the `autoreview` subagent. Verify
-each finding against the code before applying it, and report why rejected
-findings do not apply.
+cleanup. 
 
 Load only relevant skills. User instructions and higher-priority instructions
 win when a skill conflicts with the requested outcome.
