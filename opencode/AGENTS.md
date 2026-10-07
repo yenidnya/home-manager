@@ -1,4 +1,5 @@
 <!-- codebase-memory-mcp:start -->
+
 # Codebase Memory
 
 ## Codebase Knowledge Graph (codebase-memory-mcp)
@@ -7,34 +8,84 @@ This project uses codebase-memory-mcp to maintain a knowledge graph of the codeb
 ALWAYS prefer MCP graph tools over grep/glob/file-search for code discovery.
 
 ### Priority Order
+
 1. `search_graph` — find functions, classes, routes, variables by pattern
-2. `trace_path` — trace who calls a function or what it calls
-3. `get_code_snippet` — read specific function/class source code
-4. `check_index_coverage` — validate candidate paths and missed ranges before claims
-5. `query_graph` — run Cypher queries for complex patterns
-6. `get_architecture` — high-level project summary
+1. `trace_path` — trace who calls a function or what it calls
+1. `get_code_snippet` — read specific function/class source code
+1. `check_index_coverage` — validate candidate paths and missed ranges before claims
+1. `query_graph` — run Cypher queries for complex patterns
+1. `get_architecture` — high-level project summary
 
 ### Evidence tiers
+
 - **Scout (Tier 1):** quick positive lookup with few calls and targeted source checks. Mark it provisional; do not make negative or exhaustive claims.
 - **Verify (Tier 2, default):** task-directed graph evidence, relevant trace directions, exact snippets for material claims, and relevant pagination.
 - **Auditor (Tier 3):** bounded-scope full verification with current generation, complete relevant pagination, both call directions and broader relationships when material, and every limitation disclosed.
 - After candidate paths are known in any tier, call `check_index_coverage` once with every evidence path. Add relevant scopes for negative or exhaustive claims. A clean result means no recorded gap, not proof of completeness. For partial, skipped, excluded, stale, pending, or unknown coverage, read/grep the reported ranges or scope before relying on graph results.
 
 ### When to fall back to grep/glob
+
 - Searching for string literals, error messages, config values
 - Searching non-code files (Dockerfiles, shell scripts, configs)
 - When MCP tools return insufficient results
 
 ### Examples
+
 - Find a handler: `search_graph(name_pattern=".*OrderHandler.*")`
 - Who calls it: `trace_path(function_name="OrderHandler", direction="inbound")`
 - Read source: `get_code_snippet(qualified_name="pkg/orders.OrderHandler")`
 
 ### Session resets and subagents
+
 - At session start or after compaction, confirm the nearest graph project and generation with `list_projects` or `index_status`, then choose Scout, Verify, or Auditor.
 - Before spawning a subagent, query the graph and coverage in the parent. Pass the tier, project, generation/freshness, bounded scope, queries and pagination state, qualified symbols, paths, call-chain findings, coverage evidence with ranges/reasons, source fallback already performed, and unresolved questions in the delegated task context.
 - Do not assume subagents inherit MCP access or the parent conversation. If a child lacks MCP tools, it must not call or claim MCP access. It should use the supplied evidence and read/grep exact source, especially every reported missed-coverage range.
+
 <!-- codebase-memory-mcp:end -->
+
+# Agent Memory
+
+Your memory is OptMem:
+
+- The tool is `~/.config/home-manager/opencode/plugins/optmem/memo.py`
+- Your memories are in `~/.config/opencode/plugins/optmem/memory`
+
+OptMem outlives every session, compaction, model and vendor change.
+Without it you do not know who you are, or what was decided and tried.
+
+### At startup: activating OptMem (mandatory)
+
+Run `~/.config/home-manager/opencode/plugins/optmem/memo.py wake` before any other tool call, in every session, and
+then do exactly what it prints, to the end of its output.
+
+### While working: register memories (mandatory)
+
+Call `~/.config/home-manager/opencode/plugins/optmem/memo.py note "<1 line, max 280 bytes>"` whenever you learn
+something new, or something worth keeping happens. That covers a task
+worth real effort, a fact or insight the user teaches you, anything you
+learn about their life (even indirectly), any event of lasting effect.
+
+Do not register redundant memories.
+
+If `~/.config/home-manager/opencode/plugins/optmem/memo.py note` asks a compression: do it before your next action.
+
+Never edit or delete anything under `~/.config/opencode/plugins/optmem/memory`: the tool manages it.
+
+### When you need an old memory: search, or navigate
+
+`~/.config/home-manager/opencode/plugins/optmem/memo.py recall <regex>` searches every memory, word for word.
+
+Your memories also form a binary tree: #0-1, #2-3 ... exist as one-line
+summaries, pairs of those as #0-3, and so on -- every `#a-b` line wake
+prints is one node of it. `~/.config/home-manager/opencode/plugins/optmem/memo.py zoom <a-b>` opens a node into its
+two halves, down to the raw memories.
+
+### If you're a subagent: skip everything above
+
+Parallel sessions on this machine are all you, and may all write memories.
+A subagent is not: it must never run `memo`, because it cannot judge what
+is already known, and its notes would arrive duplicated and incorrectly.
+When you spawn one, write: `You are a subagent. Don't run memo.`
 
 # Coding Standards
 
@@ -56,7 +107,7 @@ ALWAYS prefer MCP graph tools over grep/glob/file-search for code discovery.
 - Hard cap of 1-2 lines per comment, If it needs more, the code needs restructuring, not prose. Never write multi-paragraph comment blocks. Never write a doc comment that paraphrases the function name, the signature, the match arms, or the struct fields below it.
 - Doc comments should always be present at the top of the file giving context about the file. If its a small file than it can be omitted. You don't write doc comments until code is near prod-ready state. Doc comments follow the guidelines around the normal comments where they never restate whats readable. If the module is self explanatory just have a title in the doc comments. No need for extra information if module is clear to understand
 
-# Memory
+# Working Rules
 
 - When writing any persistent text — code comments, steering, docs, configs, notes — be concise and durable. It must stand on its own to a reader with zero awareness of our conversation: no "as discussed", no "per request", no references to ephemeral context. Capture the lasting RULE, not the current snapshot — never bake today's specific values, folder layouts, or one-off examples into something meant to persist
 - If you don't know, first investigate. Search the codebase for related things, reusable components/code. Ask for user's input when you cannot determine.
