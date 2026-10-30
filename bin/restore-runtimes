@@ -3,7 +3,7 @@
 set -euo pipefail
 
 mise install
-rustup toolchain install 1.97.1 stable nightly
+rustup toolchain install 1.97.1 stable nightly --component rust-src
 rustup default 1.97.1
 
 # --skip-config keeps agent wiring declarative: opencode.jsonc owns the MCP entry.

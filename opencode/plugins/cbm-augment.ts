@@ -10,8 +10,10 @@
 // OpenCode documents no context-output lifecycle hook), and reinjection
 // after compaction via the documented experimental surface.
 import { spawn } from 'node:child_process';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 
-const BIN = '/Users/yenidnya/.local/bin/codebase-memory-mcp';
+const BIN = join(homedir(), '.local/bin/codebase-memory-mcp');
 
 function augment(payload) {
   return new Promise((resolve) => {

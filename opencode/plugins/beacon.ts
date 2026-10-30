@@ -2,7 +2,10 @@
 // Beacon endpoint telemetry plugin for opencode.
 // Managed by beacon endpoint hooks install --harness opencode.
 
-const beaconCommand = "'/Users/yenidnya/.beacon/endpoint/hooks/beacon-hooks' --platform opencode --log '/Users/yenidnya/.beacon/endpoint/logs/runtime.jsonl' --config '/Users/yenidnya/.beacon/endpoint/config.json' opencode-event"
+import { homedir } from "node:os"
+
+const beaconHome = `${homedir()}/.beacon/endpoint`
+const beaconCommand = `'${beaconHome}/hooks/beacon-hooks' --platform opencode --log '${beaconHome}/logs/runtime.jsonl' --config '${beaconHome}/config.json' opencode-event`
 const debugEnabled = process.env.BEACON_OPENCODE_DEBUG === "1"
 const sendTimeoutMs = 2000
 const directHookTypes = new Set([

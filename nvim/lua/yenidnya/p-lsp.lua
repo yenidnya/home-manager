@@ -4,22 +4,16 @@ return {
 		"williamboman/mason.nvim",
 		config = function()
 			require("mason").setup()
-			require("mason-install").ensure_formatters_installed()
+			require("yenidnya.mason-nix").setup()
 		end,
 	},
 	{
 		"williamboman/mason-lspconfig.nvim",
 		config = function()
-			require("mason-lspconfig").setup({
-				ensure_installed = {
-					"rust_analyzer",
-					"jsonls",
-					"lua_ls",
-					"ts_ls",
-					"typos_lsp",
-					"zls",
-				},
-			})
+			require("mason-lspconfig").setup()
+
+			-- Nix installs these servers, so mason-lspconfig does not enable them.
+			vim.lsp.enable({ "jsonls", "lua_ls", "rust_analyzer", "stylua", "taplo", "ts_ls", "typos_lsp", "zls" })
 
 			vim.lsp.config("lua_ls", {
 				settings = {

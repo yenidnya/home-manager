@@ -3,7 +3,7 @@
     "home-manager": {
       "inputs": {
         "nixpkgs": [
-          "nixpkgs"
+          "nixpkgs-linux"
         ]
       },
       "locked": {
@@ -21,7 +21,7 @@
         "type": "github"
       }
     },
-    "nixpkgs": {
+    "nixpkgs-darwin": {
       "locked": {
         "lastModified": 1789485310,
         "narHash": "sha256-VsDMTLSkAAJmbNha6sGNzlF33X7RESWLl3SnjDQu+4U=",
@@ -33,6 +33,22 @@
       "original": {
         "owner": "NixOS",
         "ref": "nixpkgs-26.05-darwin",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-linux": {
+      "locked": {
+        "lastModified": 1793294725,
+        "narHash": "sha256-loLMnbbS4KhmG2ln9EY6f0YMNCA273Yx02oWYQ9IMeE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6f06d204d8f2d8761d9da78778745974a3216381",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-26.05",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -68,7 +84,8 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs-darwin": "nixpkgs-darwin",
+        "nixpkgs-linux": "nixpkgs-linux",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "private-config": "private-config"
       }
