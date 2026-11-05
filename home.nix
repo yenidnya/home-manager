@@ -161,6 +161,12 @@ in
         pull.rebase = true;
         core.excludesFile = "${config.xdg.configHome}/git/ignore";
       };
+      includes = [
+        {
+          condition = "gitdir:${config.xdg.configHome}/home-manager/";
+          contents.user.email = "batuhanyndny@gmail.com";
+        }
+      ];
     };
 
     home-manager.enable = true;

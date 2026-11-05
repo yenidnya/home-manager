@@ -102,7 +102,6 @@ These word counts are approximate and you can feel free to go longer if needed.
 cloud-deploy/
 ├── SKILL.md (workflow + selection)
 └── references/
-    ├── aws.md
     ├── gcp.md
     └── azure.md
 ```

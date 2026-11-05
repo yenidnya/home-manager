@@ -91,6 +91,7 @@ else
     )
 fi
 
+# The locked Home Manager CLI matches the modules and needs no GitHub branch lookup.
 nix --extra-experimental-features "nix-command flakes" \
-    run github:nix-community/home-manager/release-26.05 -- \
+    run --inputs-from "$repository" home-manager -- \
     "${home_manager_arguments[@]}"

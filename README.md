@@ -14,6 +14,17 @@ sh <(curl -L https://nixos.org/nix/install)
 git clone PUBLIC_REMOTE ~/.config/home-manager
 ```
 
+Nix fetches the flake inputs through the GitHub API, which allows 60 unauthenticated
+requests per hour for each IP address. Behind a shared IP address, add a GitHub token
+with read-only access to public repositories:
+
+```sh
+mkdir -p ~/.config/nix
+read -rs 'token?GitHub token: '
+(umask 077; printf 'access-tokens = github.com=%s\n' "$token" >> ~/.config/nix/nix.conf)
+unset token
+```
+
 ## Install
 
 Clone the optional private overlay once, then apply:
@@ -63,6 +74,10 @@ Credentials and generated authentication state do not belong in either repositor
 
 `home.nix` manages packages, Git, Zsh, Powerlevel10k, mise, Neovim, tmux, fzf, and zoxide.
 It links Neovim, btop, OpenCode, Alacritty, and steering files from this repository.
+
+OpenCode plugins load Kiro steering, skills, MCP servers, and agents from `~/.kiro`, and
+Claude Code agents from `~/.claude/agents`, at every start. Both do nothing when the
+directory is absent.
 
 Configuration sources remain writable inside this repository.
 Private modules can add packages, settings, and files without changing the public repository.
