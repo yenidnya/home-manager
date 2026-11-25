@@ -16,6 +16,9 @@ opencode/node_modules/
 opencode/package-lock.json
 opencode/package.json
 opencode/bun.lock
+opencode/service.json
+opencode/service.json.*.tmp
+opencode/plugins/beacon.ts
 opencode/plugins/optmem/memory/.lock
 opencode/plugins/optmem/memory/TREE
 opencode/plugins/optmem/memory/LOG.txt

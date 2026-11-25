@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
     nixpkgs-linux.url = "github:NixOS/nixpkgs/nixos-26.05";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/52d40b93d6203b8ffc5ecb21da5ac50739ee16cc";
 
     home-manager = {
       url = "github:nix-community/home-manager/release-26.05";

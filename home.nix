@@ -296,6 +296,13 @@ in
       };
       syntaxHighlighting.enable = true;
 
+      # macOS updates replace /etc/zshrc and drop the hook the Nix installer added there.
+      envExtra = ''
+        if [[ -r /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+          source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+        fi
+      '';
+
       plugins = [
         {
           name = "powerlevel10k";

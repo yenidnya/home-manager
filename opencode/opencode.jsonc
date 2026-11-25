@@ -2,45 +2,133 @@
     "$schema": "https://opencode.ai/config.json",
     "share": "disabled",
     "default_agent": "build",
-    "permission": {
-        "bash": {
-            "git *": "ask",
-            "git branch": "allow",
-            "git -C * branch": "allow",
-            "git blame*": "allow",
-            "git -C * blame*": "allow",
-            "git diff*": "allow",
-            "git -C * diff*": "allow",
-            "git grep*": "allow",
-            "git -C * grep*": "allow",
-            "git log*": "allow",
-            "git -C * log*": "allow",
-            "git ls-files*": "allow",
-            "git -C * ls-files*": "allow",
-            "git rev-parse*": "allow",
-            "git -C * rev-parse*": "allow",
-            "git show*": "allow",
-            "git -C * show*": "allow",
-            "git status*": "allow",
-            "git -C * status*": "allow"
+    "permissions": [
+        {
+            "action": "shell",
+            "resource": "git *",
+            "effect": "ask"
         },
-        "external_directory": "allow",
-        "doom_loop": "allow",
-        "skill": "allow"
-    },
+        {
+            "action": "shell",
+            "resource": "git branch",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * branch",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git blame*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * blame*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git diff*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * diff*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git grep*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * grep*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git log*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * log*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git ls-files*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * ls-files*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git rev-parse*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * rev-parse*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git show*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * show*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git status*",
+            "effect": "allow"
+        },
+        {
+            "action": "shell",
+            "resource": "git -C * status*",
+            "effect": "allow"
+        },
+        {
+            "action": "external_directory",
+            "resource": "*",
+            "effect": "allow"
+        },
+        {
+            "action": "skill",
+            "resource": "*",
+            "effect": "allow"
+        }
+    ],
     "mcp": {
-        "codebase-memory-mcp": {
-            "command": [
-                "codebase-memory-mcp"
-            ],
-            "type": "local"
-        },
-        "figma": {
-            "type": "remote",
-            "url": "http://127.0.0.1:3845/mcp",
-            "enabled": true
+        "servers": {
+            "codebase-memory-mcp": {
+                "type": "local",
+                "command": [
+                    "codebase-memory-mcp"
+                ]
+            },
+            "figma": {
+                "type": "remote",
+                "url": "http://127.0.0.1:3845/mcp"
+            },
         }
     },
+    "experimental": {
+        "todo": true
+    },
+    "skills": [
+        "~/.claude/skills"
+    ],
     "instructions": [
         "~/.config/steering/*.md"
     ]
