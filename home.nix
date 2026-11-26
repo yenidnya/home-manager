@@ -12,6 +12,22 @@ let
   unstable = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
   logcat-colorize = pkgs.callPackage ./packages/logcat-colorize.nix { };
 
+  # The nixpkgs wrapper prepends Nix libraries to LD_LIBRARY_PATH; the library-path plugin restores the value it saw.
+  opencode =
+    if isLinux then
+      pkgs.symlinkJoin {
+        inherit (unstable.opencode) name meta;
+        paths = [ unstable.opencode ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          rm $out/bin/opencode
+          makeWrapper ${unstable.opencode}/bin/opencode $out/bin/opencode \
+            --run 'export OPENCODE_INHERITED_LD_LIBRARY_PATH="''${LD_LIBRARY_PATH-}"'
+        '';
+      }
+    else
+      unstable.opencode;
+
   # Keyed by Mason package name: Neovim labels these as Nix-managed and Mason refuses to install them.
   neovimTools = {
     eslint_d = pkgs.eslint_d;
@@ -71,7 +87,7 @@ in
         tree-sitter
         uv
         unstable.codebase-memory-mcp
-        unstable.opencode
+        opencode
         zig
       ]
       ++ lib.attrValues neovimTools
@@ -85,6 +101,8 @@ in
       "$HOME/.nix-profile/bin"
       "$HOME/.local/bin"
       "$HOME/.cargo/bin"
+      # Processes started outside an interactive shell, such as MCP servers, never run mise's prompt hook.
+      "${config.xdg.dataHome}/mise/shims"
       "${configRepository}/bin"
     ]
     ++ lib.optionals isDarwin [
