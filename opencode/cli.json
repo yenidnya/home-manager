@@ -5,6 +5,7 @@
     "mode": "system"
   },
   "session": {
-    "sidebar": "auto"
+    "sidebar": "auto",
+    "permissions": "autoaccept"
   }
 }

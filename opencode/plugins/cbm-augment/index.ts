@@ -1,11 +1,9 @@
 /** Codebase Memory context for tool results and compaction. */
 import { execFile } from "node:child_process"
-import { homedir } from "node:os"
-import { join } from "node:path"
 import { Plugin } from "@opencode/plugin"
 import type { ToolHooks } from "@opencode/plugin/promise/tool"
 
-const binary = join(homedir(), ".local/bin/codebase-memory-mcp")
+const binary = "codebase-memory-mcp"
 const sessionStart = { hook_event_name: "SessionStart" } as const
 
 type Query =

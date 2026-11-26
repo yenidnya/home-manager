@@ -70,6 +70,7 @@ in
         tree
         tree-sitter
         uv
+        unstable.codebase-memory-mcp
         unstable.opencode
         zig
       ]
